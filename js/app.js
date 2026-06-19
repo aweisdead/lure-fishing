@@ -1028,47 +1028,55 @@ function getPersonalizedRecs(weather, logStats) {
 
 
 
+
 function fetchSpotLocation() {
   var btn = document.getElementById("btn-spot-locate");
-  var status = document.getElementById("spot-location-status");
+  var st = document.getElementById("spot-location-status");
   btn.textContent = "⏳"; btn.disabled = true;
-  status.style.display = "block"; status.textContent = "获取位置...";
+  st.style.display = "block"; st.textContent = "获取位置...";
 
   function setPos(lat, lon, addr) {
     document.getElementById("spot-location").value = addr || (lat + ", " + lon);
     document.getElementById("spot-lat").value = lat;
     document.getElementById("spot-lon").value = lon;
-    status.textContent = "✅ " + (addr || lat + ", " + lon);
+    st.textContent = "✅ " + (addr || lat + ", " + lon);
     btn.textContent = "📍"; btn.disabled = false;
   }
 
-  function ipFall() {
+  function ipCity(lat, lon) {
     fetch("https://ipinfo.io/json")
       .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
-      .then(function(d) { var loc = d.loc.split(","); setPos(loc[0], loc[1], d.city + ", " + d.region); })
-      .catch(function() { status.textContent = "❌ 定位失败"; btn.textContent = "📍"; btn.disabled = false; });
+      .then(function(d) {
+        var city = d.city + ", " + d.region;
+        if (lat) { setPos(lat, lon, city + " (" + lat + ", " + lon + ")"); }
+        else { var loc = d.loc.split(","); setPos(loc[0], loc[1], city); }
+      })
+      .catch(function() { if (lat) { setPos(lat, lon, lat + ", " + lon); } else { btn.textContent = "📍"; btn.disabled = false; st.textContent = "❌ 定位失败"; } });
+  }
+
+  function reverseGeo(lat, lon) {
+    var ctrl = new AbortController();
+    var tm = setTimeout(function() { ctrl.abort(); }, 4000);
+    var url = "https://nominatim.openstreetmap.org/reverse?lat=" + lat + "&lon=" + lon + "&format=json&accept-language=zh";
+    fetch(url, { signal: ctrl.signal })
+      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(d) {
+        clearTimeout(tm);
+        var nm = d.display_name || "";
+        var sn = (d.address && (d.address.city || d.address.town || d.address.village || d.address.county)) || "";
+        setPos(lat, lon, (sn || nm) + " (" + lat + ", " + lon + ")");
+      })
+      .catch(function() { clearTimeout(tm); ipCity(lat, lon); });
   }
 
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      function(pos) {
-        var lat = pos.coords.latitude.toFixed(6);
-        var lon = pos.coords.longitude.toFixed(6);
-        // Use reverse geocoding with GPS coordinates for accurate address
-        fetch("https://nominatim.openstreetmap.org/reverse?lat=" + lat + "&lon=" + lon + "&format=json&accept-language=zh&zoom=10")
-          .then(function(r) { return r.json(); })
-          .then(function(d) {
-            var addr = d.display_name || "";
-            // Use city/town/village from address, fallback to display_name
-            var shortName = d.address ? (d.address.city || d.address.town || d.address.village || d.address.county || "") : "";
-            setPos(lat, lon, (shortName || addr) + " (" + lat + ", " + lon + ")");
-          })
-          .catch(function() { setPos(lat, lon, lat + ", " + lon); });
-      },
-      function() { ipFall(); },
+      function(pos) { reverseGeo(pos.coords.latitude.toFixed(6), pos.coords.longitude.toFixed(6)); },
+      function() { ipCity(); },
       { timeout: 8000, enableHighAccuracy: true }
     );
-  } else { ipFall(); }
+  } else { ipCity(); }
 }
+
 
 
