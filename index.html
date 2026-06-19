@@ -154,8 +154,14 @@
       </div>
       <div class="form-group">
         <label class="form-label">位置/导航</label>
-        <input class="form-input" id="spot-location" placeholder="如：密云水库北岸">
+        <div style="display:flex;gap:6px">
+          <input class="form-input" id="spot-location" placeholder="如：密云水库北岸" style="flex:1">
+          <button type="button" class="btn btn-sm btn-outline" onclick="fetchSpotLocation()" id="btn-spot-locate" title="获取当前位置">📍</button>
+        </div>
+        <div id="spot-location-status" style="font-size:12px;color:#888;margin-top:4px;display:none"></div>
       </div>
+      <input type="hidden" id="spot-lat">
+      <input type="hidden" id="spot-lon">
       <div class="form-group">
         <label class="form-label">底部结构</label>
         <input class="form-input" id="spot-structures" placeholder="乱石底、草区、陡坎(逗号分隔)">
