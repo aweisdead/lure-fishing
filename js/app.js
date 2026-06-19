@@ -908,7 +908,41 @@ function initApp() {
       if (e.target === m) m.classList.remove('active');
     });
   });
+
+  // 页面加载后延迟自动获取天气
+  setTimeout(function() { autoFetchWeather(); }, 200);
 }
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', initApp);
+
+// ========== 自动获取天气（IP定位+Open-Meteo，无需弹窗） ==========
+function autoFetchWeather() {
+  fetch('https://ipinfo.io/json')
+    .then(function(r) { if (!r.ok) throw new Error(''); return r.json(); })
+    .then(function(d) {
+      var loc = d.loc.split(',');
+      var lat = loc[0], lon = loc[1];
+      return fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,pressure_msl,weather_code,wind_speed_10m&timezone=auto');
+    })
+    .then(function(r) { if (!r.ok) throw new Error(''); return r.json(); })
+    .then(function(d) {
+      var t = Math.round(d.current.temperature_2m);
+      var p = Math.round(d.current.pressure_msl);
+      var w = Math.round(d.current.wind_speed_10m);
+      var c = d.current.weather_code;
+      var map = {0:'晴',1:'晴',2:'多云',3:'阴',45:'多云',48:'雾',51:'小雨',53:'小雨',55:'中雨',61:'小雨',63:'中雨',65:'大雨',80:'小雨',81:'中雨',82:'大雨',95:'雷阵雨',96:'雷阵雨',99:'雷阵雨'};
+      var desc = map[c] || '多云';
+      var level = '2-3级';
+      if (w < 1) level = '0-1级';
+      else if (w < 6) level = '0-1级';
+      else if (w < 12) level = '2-3级';
+      else if (w < 20) level = '2-3级';
+      else if (w < 29) level = '4-5级';
+      else if (w < 39) level = '4-5级';
+      else level = '6级以上';
+      Store.saveWeather({pressure: String(p), temp: String(t), wind: level, weather: desc});
+      renderDashboard();
+    })
+    .catch(function(e) {});
+}
