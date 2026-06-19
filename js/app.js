@@ -1036,9 +1036,6 @@ nction autoFetchWeather() {
 }
 
 function initApp() {
-  // 打开页面自动获取天气（无需权限弹窗）
-  autoFetchWeather(false);
-
   // Tab 切换
   document.querySelectorAll('.tab-item').forEach(tab => {
     tab.addEventListener('click', () => {
