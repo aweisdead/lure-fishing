@@ -253,7 +253,7 @@ function renderDashboard() {
 
     let factorsHtml = result.factors.map(f => `
       <div class="score-bar">
-        <span style="font-size:13px;min-width:50px">${f.name}</span>
+        <span style="font-size:13px;min-width:50px">${f.name}</span><span style="font-size:12px;color:var(--text-secondary);margin-left:6px">${(weather?{ 0: weather.pressure+"hPa", 1: weather.temp+String.fromCharCode(8451), 2: weather.wind, 3: weather.weather }:{})[{"气压":0,"温度":1,"风力":2,"天气":3}[f.name]]||f.label}</span>
         <div class="score-track"><div class="score-fill ${f.score >= 7 ? 'good' : f.score >= 5 ? 'mid' : 'bad'}" style="width:${(f.score/10)*100}%"></div></div>
         <span class="score-label">${f.score}</span>
       </div>`).join('');
