@@ -1026,27 +1026,57 @@ function getPersonalizedRecs(weather, logStats) {
 }
 
 
+
 function fetchSpotLocation() {
   var btn = document.getElementById("btn-spot-locate");
   var status = document.getElementById("spot-location-status");
   btn.textContent = "⏳";
   btn.disabled = true;
   status.style.display = "block";
-  status.textContent = "正在获取位置...";
-  fetch("https://ipinfo.io/json")
-    .then(function(r) { if (!r.ok) throw new Error(""); return r.json(); })
-    .then(function(d) {
-      var loc = d.loc.split(",");
-      document.getElementById("spot-location").value = d.city + ", " + d.region;
-      document.getElementById("spot-lat").value = loc[0];
-      document.getElementById("spot-lon").value = loc[1];
-      status.textContent = "✅ " + d.city + " " + d.region + " (" + loc[0] + ", " + loc[1] + ")";
-      btn.textContent = "📍";
-      btn.disabled = false;
-    })
-    .catch(function() {
-      status.textContent = "❌ 定位失败";
-      btn.textContent = "📍";
-      btn.disabled = false;
-    });
+  status.textContent = "获取位置...";
+
+  function setPos(lat, lon, addr) {
+    document.getElementById("spot-location").value = addr || (lat + ", " + lon);
+    document.getElementById("spot-lat").value = lat;
+    document.getElementById("spot-lon").value = lon;
+    status.textContent = "✅ " + (addr || lat + ", " + lon);
+    btn.textContent = "📍";
+    btn.disabled = false;
+  }
+
+  function ipFall() {
+    fetch("https://ipinfo.io/json")
+      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(d) {
+        var loc = d.loc.split(",");
+        setPos(loc[0], loc[1], d.city + ", " + d.region);
+      })
+      .catch(function() {
+        status.textContent = "❌ 定位失败";
+        btn.textContent = "📍";
+        btn.disabled = false;
+      });
+  }
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var lat = pos.coords.latitude.toFixed(6);
+        var lon = pos.coords.longitude.toFixed(6);
+        fetch("https://ipinfo.io/json")
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            setPos(lat, lon, d.city + ", " + d.region + " (" + lat + ", " + lon + ")");
+          })
+          .catch(function() {
+            setPos(lat, lon, lat + ", " + lon);
+          });
+      },
+      function() { ipFall(); },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  } else {
+    ipFall();
+  }
 }
+
