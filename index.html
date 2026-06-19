@@ -1,0 +1,277 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>路亚助手</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ========== 顶部导航 ========== -->
+<header class="app-header">
+  <span class="header-icon">🎣</span>
+  <h1>路亚助手</h1>
+  <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;padding:5px 10px" onclick="showWeatherModal()">🌤</button>
+</header>
+
+<!-- ========== 页面: Dashboard ========== -->
+<div class="page active" id="page-dashboard">
+  <div id="stat-grid" class="stat-grid">
+    <div class="stat-card"><div class="stat-value" id="stat-catch">0</div><div class="stat-label">中鱼次数</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-fish">0</div><div class="stat-label">鱼获总数</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-spots">0</div><div class="stat-label">收藏钓点</div></div>
+  </div>
+
+  <div id="weather-analysis"></div>
+
+  <div id="recent-logs"></div>
+
+  <div id="season-strategy"></div>
+</div>
+
+<!-- ========== 页面: 鱼种百科 ========== -->
+<div class="page" id="page-fish">
+  <div class="search-bar">
+    <input class="form-input" id="fish-search" placeholder="搜索鱼种名称...">
+  </div>
+  <div id="fish-list"></div>
+</div>
+
+<!-- ========== 页面: 拟饵装备 ========== -->
+<div class="page" id="page-gear">
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="addGear()">+ 添加装备</button>
+  </div>
+  <div id="gear-list"></div>
+  <div class="card" style="margin-top:12px">
+    <div class="card-title">📖 操控手法</div>
+    <div id="techniques-list"></div>
+  </div>
+</div>
+
+<!-- ========== 页面: 钓点日志 ========== -->
+<div class="page" id="page-spots">
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="addSpot()">+ 添加钓点</button>
+    <button class="btn btn-accent" onclick="addLog()">📝 记录钓况</button>
+  </div>
+  <div class="card">
+    <div class="card-title">📍 我的钓点</div>
+    <div id="spots-list"></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="card-title">📝 钓况日志</div>
+    <div id="logs-list"></div>
+  </div>
+</div>
+
+<!-- ========== 页面: 数据分析 ========== -->
+<div class="page" id="page-stats">
+  <div id="stats-content"></div>
+</div>
+
+<!-- ========== Tab 导航 ========== -->
+<nav class="tab-bar">
+  <button class="tab-item active" data-page="dashboard">
+    <span class="tab-icon">🏠</span> 今日
+  </button>
+  <button class="tab-item" data-page="fish">
+    <span class="tab-icon">🐟</span> 鱼种
+  </button>
+  <button class="tab-item" data-page="gear">
+    <span class="tab-icon">🎣</span> 装备
+  </button>
+  <button class="tab-item" data-page="spots">
+    <span class="tab-icon">📍</span> 钓点
+  </button>
+  <button class="tab-item" data-page="stats">
+    <span class="tab-icon">📊</span> 分析
+  </button>
+</nav>
+
+<!-- ========== 详情页 ========== -->
+<div class="detail-page" id="detail-page"></div>
+
+<!-- ========== 天气设置弹窗 ========== -->
+<div class="modal-overlay" id="weather-modal">
+  <div class="modal-content">
+    <h2>🌤 设置今日天气</h2>
+    <div class="form-group">
+      <label class="form-label">气压 (hPa)</label>
+      <input class="form-input" id="weather-pressure" type="number" placeholder="如 1005">
+    </div>
+    <div class="form-group">
+      <label class="form-label">气温 (°C)</label>
+      <input class="form-input" id="weather-temp" type="number" placeholder="如 28">
+    </div>
+    <div class="form-group">
+      <label class="form-label">风力</label>
+      <select class="form-select" id="weather-wind">
+        <option value="">选择风力</option>
+        <option value="0-1级">0-1级 (无风/微风)</option>
+        <option value="2-3级">2-3级 (微风细浪)</option>
+        <option value="4-5级">4-5级 (中浪)</option>
+        <option value="6级以上">6级以上 (大风)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">天气状况</label>
+      <select class="form-select" id="weather-type">
+        <option value="">选择天气</option>
+        <option value="晴">☀️ 晴</option>
+        <option value="多云">⛅ 多云</option>
+        <option value="阴">☁️ 阴</option>
+        <option value="小雨">🌦 小雨</option>
+        <option value="中雨">🌧 中雨</option>
+        <option value="大雨">🌧 大雨</option>
+        <option value="雷阵雨">⛈ 雷阵雨</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+      <button class="btn btn-sm btn-outline" onclick="quickSetWeather(1005,28,'2-3级','晴')">☀️ 典型晴天</button>
+      <button class="btn btn-sm btn-outline" onclick="quickSetWeather(998,26,'2-3级','多云')">⛅ 多云天</button>
+      <button class="btn btn-sm btn-outline" onclick="quickSetWeather(992,30,'0-1级','小雨')">🌦 小雨天</button>
+      <button class="btn btn-sm btn-outline" onclick="quickSetWeather(990,32,'0-1级','阴')">☁️ 阴天</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="toggleModal('weather-modal',false)">取消</button>
+      <button class="btn btn-primary" onclick="saveWeather()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 钓点弹窗 ========== -->
+<div class="modal-overlay" id="spot-modal">
+  <div class="modal-content">
+    <h2 id="spot-modal-title">添加钓点</h2>
+    <form id="spot-form" onsubmit="event.preventDefault();saveSpot()">
+      <input type="hidden" id="spot-form-id">
+      <div class="form-group">
+        <label class="form-label">钓点名称 *</label>
+        <input class="form-input" id="spot-name" placeholder="如：白河湾大桥下" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">位置/导航</label>
+        <input class="form-input" id="spot-location" placeholder="如：密云水库北岸">
+      </div>
+      <div class="form-group">
+        <label class="form-label">底部结构</label>
+        <input class="form-input" id="spot-structures" placeholder="乱石底、草区、陡坎(逗号分隔)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">目标鱼种</label>
+        <input class="form-input" id="spot-target-fish" placeholder="鳜鱼、鲈鱼、翘嘴(逗号分隔)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <textarea class="form-textarea" id="spot-notes" placeholder="停车位置、最佳标点、注意事项等"></textarea>
+      </div>
+          <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+      <button class="btn btn-primary btn-block" onclick="autoFetchWeather()" id="btn-fetch-weather">
+        📡 定位并自动获取天气
+      </button>
+      <div id="weather-fetch-status" style="font-size:13px;color:var(--text-secondary);text-align:center;margin-top:6px;display:none"></div>
+    </div>
+    <div class="modal-actions">
+        <button class="btn btn-outline" type="button" onclick="toggleModal('spot-modal',false)">取消</button>
+        <button class="btn btn-primary" type="submit">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========== 钓况弹窗 ========== -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal-content">
+    <h2 id="log-modal-title">记录钓况</h2>
+    <form id="log-form" onsubmit="event.preventDefault();saveLog()">
+      <input type="hidden" id="log-form-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">日期 *</label>
+          <input class="form-input" id="log-date" type="date" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">时段</label>
+          <input class="form-input" id="log-time" placeholder="如：6:00-9:00">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">钓点</label>
+          <input class="form-input" id="log-spot" placeholder="钓点名称">
+        </div>
+        <div class="form-group">
+          <label class="form-label">天气</label>
+          <input class="form-input" id="log-weather" placeholder="晴/多云/小雨">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">鱼种</label>
+          <input class="form-input" id="log-fish" placeholder="翘嘴">
+        </div>
+        <div class="form-group">
+          <label class="form-label">鱼获数量</label>
+          <input class="form-input" id="log-count" type="number" value="0" min="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">拟饵</label>
+          <input class="form-input" id="log-lure" placeholder="铅笔/VIB/铅头钩+T尾">
+        </div>
+        <div class="form-group">
+          <label class="form-label">手法</label>
+          <input class="form-input" id="log-technique" placeholder="跳底/走狗/波爬">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <textarea class="form-textarea" id="log-notes" placeholder="标点位置、鱼群情况、心得体会等"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" type="button" onclick="toggleModal('log-modal',false)">取消</button>
+        <button class="btn btn-primary" type="submit">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========== 装备弹窗 ========== -->
+<div class="modal-overlay" id="gear-modal">
+  <div class="modal-content">
+    <h2>添加装备</h2>
+    <form id="gear-form" onsubmit="event.preventDefault();saveGear()">
+      <div class="form-group">
+        <label class="form-label">装备名称 *</label>
+        <input class="form-input" id="gear-name" placeholder="如：达亿瓦 PR100" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">类别</label>
+        <select class="form-select" id="gear-category">
+          <option value="rod">🎣 钓竿</option>
+          <option value="reel">🔄 渔轮</option>
+          <option value="lure">🎯 拟饵</option>
+          <option value="line">🪢 钓线</option>
+          <option value="other">📦 其他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">规格参数</label>
+        <input class="form-input" id="gear-spec" placeholder="如：1.98m ML调 / 2000型">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" type="button" onclick="toggleModal('gear-modal',false)">取消</button>
+        <button class="btn btn-primary" type="submit">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

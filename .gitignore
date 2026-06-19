@@ -1,0 +1,17 @@
+﻿# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node
+node_modules/
+package-lock.json
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Temp
+*.tmp
