@@ -880,14 +880,15 @@ function autoFetchWeather(isManual) {
   }
 
   // IP定位（无需权限弹窗）
-  fetch('https://ip-api.com/json/')
+  fetch('https://ipinfo.io/json')
     .then(function(r) { if (!r.ok) throw new Error('定位失败'); return r.json(); })
     .then(function(ipData) {
-      var lat = ipData.lat;
-      var lon = ipData.lon;
+      var locParts = ipData.loc.split(",");
+      var lat = locParts[0];
+      var lon = locParts[1];
       if (isManualMode) {
         btn.textContent = '📡 获取天气...';
-        status.textContent = ipData.city + ', ' + ipData.regionName;
+        status.textContent = ipData.city + ', ' + ipData.region;
         status.style.display = 'block';
       }
       return fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,pressure_msl,weather_code,wind_speed_10m&timezone=auto');
