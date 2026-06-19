@@ -613,6 +613,7 @@ function addLog() {
   document.getElementById('log-form-id').value = '';
   document.getElementById('log-date').value = new Date().toISOString().slice(0, 10);
   toggleModal('log-modal', true);
+  populateLogSpots();
 
   // 自动填充天气
   const weather = Store.getWeather();
@@ -630,7 +631,7 @@ function editLog(id) {
   document.getElementById('log-form-id').value = log.id;
   document.getElementById('log-date').value = log.date;
   document.getElementById('log-time').value = log.time || '';
-  document.getElementById('log-spot').value = log.spotName || '';
+  populateLogSpots(log.spotName);
   document.getElementById('log-fish').value = log.fishName || '';
   document.getElementById('log-count').value = log.catchCount || 0;
   document.getElementById('log-lure').value = log.lure || '';
@@ -1079,4 +1080,15 @@ function fetchSpotLocation() {
 }
 
 
-
+function populateLogSpots(selected) {
+  var sel = document.getElementById("log-spot");
+  sel.innerHTML = "<option value="">选择钓点...</option>";
+  var spots = Store.getSpots();
+  spots.forEach(function(s) {
+    var opt = document.createElement("option");
+    opt.value = s.name;
+    opt.textContent = s.name;
+    if (selected && s.name === selected) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
