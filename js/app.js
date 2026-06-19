@@ -868,7 +868,75 @@ function renderStats() {
 // ========== 初始化 ==========
 
 // ========== 自动获取天气（Open-Meteo API） ==========
-function autoFetchWeather() {
+function autoFetchWeather(isManual) {
+  var btn = null, status = null;
+  var isManualMode = (isManual === true);
+  if (isManualMode) {
+    btn = document.getElementById('btn-fetch-weather');
+    status = document.getElementById('weather-fetch-status');
+    btn.textContent = '⏳ 获取位置...';
+    btn.disabled = true;
+    status.style.display = 'none';
+  }
+
+  // IP定位（无需权限弹窗）
+  fetch('https://ip-api.com/json/')
+    .then(function(r) { if (!r.ok) throw new Error('定位失败'); return r.json(); })
+    .then(function(ipData) {
+      var lat = ipData.lat;
+      var lon = ipData.lon;
+      if (isManualMode) {
+        btn.textContent = '📡 获取天气...';
+        status.textContent = ipData.city + ', ' + ipData.regionName;
+        status.style.display = 'block';
+      }
+      return fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,pressure_msl,weather_code,wind_speed_10m&timezone=auto');
+    })
+    .then(function(r) { if (!r.ok) throw new Error('天气服务不可用'); return r.json(); })
+    .then(function(data) {
+      var temp = Math.round(data.current.temperature_2m);
+      var pressure = Math.round(data.current.pressure_msl);
+      var windKmh = Math.round(data.current.wind_speed_10m);
+      var code = data.current.weather_code;
+
+      var wmoMap = {0:'晴',1:'晴',2:'多云',3:'阴',45:'多云',48:'雾',51:'小雨',53:'小雨',55:'中雨',61:'小雨',63:'中雨',65:'大雨',80:'小雨',81:'中雨',82:'大雨',95:'雷阵雨',96:'雷阵雨',99:'雷阵雨'};
+      var weatherDesc = wmoMap[code] || '多云';
+
+      var windLevel = '2-3级';
+      if (windKmh < 1) windLevel = '0-1级';
+      else if (windKmh < 6) windLevel = '0-1级';
+      else if (windKmh < 12) windLevel = '2-3级';
+      else if (windKmh < 20) windLevel = '2-3级';
+      else if (windKmh < 29) windLevel = '4-5级';
+      else if (windKmh < 39) windLevel = '4-5级';
+      else windLevel = '6级以上';
+
+      var weatherData = {pressure: String(pressure), temp: String(temp), wind: windLevel, weather: weatherDesc};
+      Store.saveWeather(weatherData);
+
+      if (isManualMode) {
+        document.getElementById('weather-pressure').value = weatherData.pressure;
+        document.getElementById('weather-temp').value = weatherData.temp;
+        document.getElementById('weather-wind').value = weatherData.wind;
+        document.getElementById('weather-type').value = weatherData.weather;
+        status.textContent = '✅ ' + ipData.city + ' ' + temp + '°C ' + pressure + 'hPa ' + weatherDesc;
+        btn.textContent = '📡 重新获取';
+        btn.disabled = false;
+        saveWeather();
+      } else {
+        renderDashboard();
+      }
+    })
+    .catch(function(e) {
+      if (isManualMode) {
+        status.textContent = '❌ ' + e.message;
+        status.style.display = 'block';
+        btn.textContent = '📡 重试';
+        btn.disabled = false;
+      }
+    });
+}
+nction autoFetchWeather() {
   const btn = document.getElementById('btn-fetch-weather');
   const status = document.getElementById('weather-fetch-status');
   
@@ -967,6 +1035,9 @@ function autoFetchWeather() {
 }
 
 function initApp() {
+  // 打开页面自动获取天气（无需权限弹窗）
+  autoFetchWeather(false);
+
   // Tab 切换
   document.querySelectorAll('.tab-item').forEach(tab => {
     tab.addEventListener('click', () => {
