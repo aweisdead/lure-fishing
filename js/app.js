@@ -282,6 +282,10 @@ function renderDashboard() {
         <div class="card-title">🎯 作钓建议</div>
         ${recsHtml}
       </div>`;
+  document.getElementById('weather-analysis').innerHTML += `
+    <div class="card">
+      <div class="card-title">\ud83c\udfaf 个性化分析</div>${(function(){ var ls=analyzeLogStats(Store.getLogs()); var pr=getPersonalizedRecs(Store.getWeather(), ls); if(pr.length===0) return ''; return pr.map(function(r){ return '<div class="recommend-card"><div class="rec-title">'+r.title+'</div><div class="rec-desc">'+r.desc+'</div></div>'; }).join(''); })()}</div>`;
+
   } else {
     weatherAnalysisEl.innerHTML = `
       <div class="card">
@@ -864,6 +868,35 @@ function renderStats() {
       ${Object.keys(spotSuccess).length === 0 ? '<div style="font-size:13px;color:var(--text-light)">暂无数据</div>' : ''}
     </div>`;
 }
+  // 条件胜率分析
+  (function() {
+    var logs2 = Store.getLogs();
+    if (logs2.length < 2) return;
+    var stats2 = analyzeLogStats(logs2);
+    var el = document.getElementById('stats-content');
+    var html = el.innerHTML;
+
+    // 天气类型分析
+    var weatherRows = Object.keys(stats2.byWeather).filter(function(k) { return stats2.byWeather[k].trips >= 2; }).sort(function(a, b) { return stats2.byWeather[b].trips - stats2.byWeather[a].trips; });
+    if (weatherRows.length > 0) {
+      html += '<div class="card"><div class="card-title">\u2601\ufe0f 天气类型胜率</div>';
+      html += '<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="border-bottom:1px solid var(--border)"><th style="padding:6px 4px;text-align:left">天气</th><th style="padding:6px 4px;text-align:center">出钓</th><th style="padding:6px 4px;text-align:center">中鱼</th><th style="padding:6px 4px;text-align:right">胜率</th></tr>';
+      weatherRows.forEach(function(k) { var d = stats2.byWeather[k]; var r = Math.round((d.success / d.trips) * 100); html += '<tr><td style="padding:6px 4px">' + k + '</td><td style="padding:6px 4px;text-align:center">' + d.trips + '</td><td style="padding:6px 4px;text-align:center">' + d.success + '</td><td style="padding:6px 4px;text-align:right"><span style="color:' + (r >= 50 ? 'var(--success)' : 'var(--danger)') + ';font-weight:600">' + r + '%</span></td></tr>'; });
+      html += '</table></div>';
+    }
+
+    // 拟饵分析
+    var lureRows = Object.keys(stats2.byLure).filter(function(k) { return stats2.byLure[k].trips >= 2; }).sort(function(a, b) { return (stats2.byLure[b].success / stats2.byLure[b].trips) - (stats2.byLure[a].success / stats2.byLure[a].trips); }).slice(0, 5);
+    if (lureRows.length > 0) {
+      html += '<div class="card"><div class="card-title">\ud83c\udfaf 拟饵胜率排行（出钓≥2次）</div>';
+      html += '<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="border-bottom:1px solid var(--border)"><th style="padding:6px 4px;text-align:left">拟饵</th><th style="padding:6px 4px;text-align:center">出钓</th><th style="padding:6px 4px;text-align:center">中鱼</th><th style="padding:6px 4px;text-align:right">胜率</th></tr>';
+      lureRows.forEach(function(k) { var d = stats2.byLure[k]; var r = Math.round((d.success / d.trips) * 100); html += '<tr><td style="padding:6px 4px">' + k + '</td><td style="padding:6px 4px;text-align:center">' + d.trips + '</td><td style="padding:6px 4px;text-align:center">' + d.success + '</td><td style="padding:6px 4px;text-align:right"><span style="color:' + (r >= 50 ? 'var(--success)' : 'var(--danger)') + ';font-weight:600">' + r + '%</span></td></tr>'; });
+      html += '</table></div>';
+    }
+
+    el.innerHTML = html;
+  })();
+
 
 // ========== 初始化 ==========
 
@@ -945,4 +978,48 @@ function autoFetchWeather() {
       renderDashboard();
     })
     .catch(function(e) {});
+}
+
+// ========== 个人钓况分析引擎 ==========
+function analyzeLogStats(logs) {
+  var stats = { totalTrips: logs.length, totalCatches: 0, successTrips: 0, successRate: 0, byWeather: {}, byLure: {}, bySpecies: {}, bySpot: {} };
+  logs.forEach(function(l) {
+    stats.totalCatches += (l.catchCount || 0);
+    if (l.catchCount > 0) stats.successTrips++;
+    var w = l.weather || "未知"; if (!stats.byWeather[w]) stats.byWeather[w] = { trips: 0, catches: 0, success: 0 };
+    stats.byWeather[w].trips++; stats.byWeather[w].catches += (l.catchCount || 0);
+    if (l.catchCount > 0) stats.byWeather[w].success++;
+    var lu = l.lure || "未知"; if (!stats.byLure[lu]) stats.byLure[lu] = { trips: 0, catches: 0, success: 0 };
+    stats.byLure[lu].trips++; stats.byLure[lu].catches += (l.catchCount || 0);
+    if (l.catchCount > 0) stats.byLure[lu].success++;
+    var f = l.fishName || "未知"; if (!stats.bySpecies[f]) stats.bySpecies[f] = { trips: 0, catches: 0, success: 0 };
+    stats.bySpecies[f].trips++; stats.bySpecies[f].catches += (l.catchCount || 0);
+    if (l.catchCount > 0) stats.bySpecies[f].success++;
+    var s = l.spotName || "未知"; if (!stats.bySpot[s]) stats.bySpot[s] = { trips: 0, catches: 0, success: 0 };
+    stats.bySpot[s].trips++; stats.bySpot[s].catches += (l.catchCount || 0);
+    if (l.catchCount > 0) stats.bySpot[s].success++;
+  });
+  stats.successRate = stats.totalTrips > 0 ? Math.round((stats.successTrips / stats.totalTrips) * 100) : 0;
+  return stats;
+}
+
+function getPersonalizedRecs(weather, logStats) {
+  var recs = [];
+  if (logStats.totalTrips < 2) { recs.push({ title: "数据太少", desc: "记录更多钓况后，这里会给出个性化建议" }); return recs; }
+
+  var w = (weather && weather.weather) ? weather.weather : null;
+  if (w && logStats.byWeather[w] && logStats.byWeather[w].trips >= 2) {
+    var ws = logStats.byWeather[w];
+    var r = Math.round((ws.success / ws.trips) * 100);
+    recs.push({ title: "今日天气(" + w + ") 历史表现", desc: "出钓 " + ws.trips + " 次 · 中鱼 " + ws.success + " 次 · 胜率 " + r + "%" });
+  }
+
+  var bestLure = null, bestRate = 0;
+  for (var k in logStats.byLure) {
+    var ld = logStats.byLure[k];
+    if (ld.trips >= 2) { var r2 = Math.round((ld.success / ld.trips) * 100); if (r2 > bestRate) { bestRate = r2; bestLure = k; } }
+  }
+  if (bestLure) recs.push({ title: "最佳拟饵", desc: bestLure + " 在你手上胜率 " + bestRate + "%" });
+
+  return recs;
 }
