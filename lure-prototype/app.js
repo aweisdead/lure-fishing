@@ -514,6 +514,13 @@ function requestLocationConditions() {
     });
 }
 
+function handleLocationTrigger(event) {
+  const trigger = event.target.closest?.("#refresh-conditions");
+  if (!trigger) return;
+  event.preventDefault();
+  requestLocationConditions();
+}
+
 document.querySelectorAll("[data-action]").forEach((button) => {
   button.addEventListener("click", () => openModal(button.dataset.action));
 });
@@ -531,7 +538,8 @@ modal.addEventListener("click", (event) => {
   if (event.target === modal) closeModal();
 });
 form.addEventListener("submit", handleSubmit);
-document.getElementById("refresh-conditions")?.addEventListener("click", requestLocationConditions);
+document.addEventListener("click", handleLocationTrigger);
+document.addEventListener("touchend", handleLocationTrigger, { passive: false });
 
 renderConditions();
 renderAll();
