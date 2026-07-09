@@ -20,7 +20,13 @@
   <main class="phone-screen" aria-label="路亚助手">
     <header class="brand-row">
       <img class="brand-lockup" src="assets/brand-lockup-transparent.png" alt="路亚助手，让每一次抛投更有收获">
-      <img class="fish-index" src="assets/fish-index.png" alt="钓鱼指数 78 适宜">
+      <div class="fish-index" aria-label="钓鱼指数">
+        <span class="material-symbols-rounded">deployed_code</span>
+        <div>
+          <small>钓鱼指数</small>
+          <strong><em id="fish-index-value">86</em> <b id="fish-index-label">适宜</b></strong>
+        </div>
+      </div>
     </header>
 
     <section class="score-card panel home-section">
@@ -28,6 +34,10 @@
         <div class="card-title">
           <span>今日钓况评分</span>
           <span class="material-symbols-rounded">info</span>
+          <button class="location-chip" type="button" id="refresh-conditions">
+            <span class="material-symbols-rounded">my_location</span>
+            <em id="condition-source">定位更新</em>
+          </button>
         </div>
         <div class="score-number">
           <strong id="score-value">86</strong>
@@ -35,36 +45,40 @@
         </div>
         <p id="score-desc">非常适合出钓</p>
       </div>
-      <img class="radar" src="assets/radar-chart.png" alt="天气条件雷达图">
+      <div class="radar-widget" aria-label="天气条件雷达图">
+        <svg id="radar-chart" viewBox="0 0 190 130" role="img" aria-labelledby="radar-title">
+          <title id="radar-title">天气条件雷达图</title>
+        </svg>
+      </div>
     </section>
 
     <section class="weather-panel panel home-section" aria-label="天气条件">
       <article>
         <span class="material-symbols-rounded weather-icon cloud">partly_cloudy_day</span>
         <div>
-          <strong>多云</strong>
-          <small>20~28°C</small>
+          <strong id="weather-summary">多云</strong>
+          <small id="weather-temp">20~28°C</small>
         </div>
       </article>
       <article>
         <span class="material-symbols-rounded weather-icon wind">air</span>
         <div>
-          <strong>东南风 2级</strong>
-          <small>气压 1008 hPa</small>
+          <strong id="weather-wind">东南风 2级</strong>
+          <small id="weather-pressure">气压 1008 hPa</small>
         </div>
       </article>
       <article>
         <span class="material-symbols-rounded weather-icon water">humidity_percentage</span>
         <div>
-          <strong>湿度 68%</strong>
-          <small>能见度 16 km</small>
+          <strong id="weather-humidity">湿度 68%</strong>
+          <small id="weather-visibility">数据源 待定位</small>
         </div>
       </article>
       <article>
         <span class="material-symbols-rounded weather-icon wave">waves</span>
         <div>
-          <strong>水温 24.6°C</strong>
-          <small>适宜窗口 6-10时</small>
+          <strong id="weather-water">水温估算 24.6°C</strong>
+          <small id="weather-window">适宜窗口 6-10时</small>
         </div>
       </article>
     </section>
@@ -104,26 +118,26 @@
           <div>
             <span class="material-symbols-rounded">phishing</span>
             <small>推荐拟饵</small>
-            <strong>米诺 (Minnow)</strong>
-            <em>110SP</em>
+            <strong id="rec-lure">米诺 (Minnow)</strong>
+            <em id="rec-lure-meta">110SP</em>
           </div>
           <div>
             <span class="material-symbols-rounded">palette</span>
             <small>推荐颜色</small>
-            <strong>自然色系</strong>
-            <em>银黑背</em>
+            <strong id="rec-color">自然色系</strong>
+            <em id="rec-color-meta">银黑背</em>
           </div>
           <div>
             <span class="material-symbols-rounded">business_center</span>
             <small>推荐重量</small>
-            <strong>10 ~ 14g</strong>
-            <em>12g</em>
+            <strong id="rec-weight">10 ~ 14g</strong>
+            <em id="rec-weight-meta">按风力调整</em>
           </div>
           <div>
             <span class="material-symbols-rounded">monitoring</span>
             <small>推荐泳姿</small>
-            <strong>快慢结合抽停</strong>
-            <em>抽2-3下 停1-2秒</em>
+            <strong id="rec-retrieve">快慢结合抽停</strong>
+            <em id="rec-retrieve-meta">抽2-3下 停1-2秒</em>
           </div>
         </div>
       </div>

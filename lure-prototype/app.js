@@ -70,11 +70,40 @@ const form = document.getElementById("entry-form");
 const modalTitle = document.getElementById("entry-title");
 let toastTimer;
 
+const defaultConditions = {
+  score: 86,
+  description: "非常适合出钓",
+  radar: [
+    { label: "天气条件", value: 85 },
+    { label: "水温条件", value: 82 },
+    { label: "溶氧估算", value: 80 },
+    { label: "气压趋势", value: 88 },
+    { label: "活跃度预测", value: 90 }
+  ],
+  weather: {
+    summary: "多云",
+    tempRange: "20~28°C",
+    wind: "东南风 2级",
+    pressure: "气压 1008 hPa",
+    humidity: "湿度 68%",
+    visibility: "等待定位",
+    water: "水温估算 24.6°C",
+    window: "适宜窗口 6-10时"
+  },
+  recommendation: {
+    lure: "米诺 (Minnow)",
+    color: "自然色系",
+    weight: "10 ~ 14g",
+    retrieve: "快慢结合抽停"
+  }
+};
+
 function loadState() {
   return structuredClone(seedState);
 }
 
 let state = loadState();
+let conditionsState = structuredClone(defaultConditions);
 
 function saveState() {
   // Persistence is intentionally cloud-only. file:// preview keeps data in memory.
@@ -116,6 +145,17 @@ async function apiCreate(type, data) {
   return response.json();
 }
 
+async function apiGetConditions(coords) {
+  if (!HAS_CLOUD_API) return structuredClone(defaultConditions);
+  const params = new URLSearchParams({
+    lat: coords.latitude,
+    lon: coords.longitude
+  });
+  const response = await fetch(`/api/conditions?${params}`);
+  if (!response.ok) throw new Error(`conditions ${response.status}`);
+  return response.json();
+}
+
 function showToast(message) {
   window.clearTimeout(toastTimer);
   toast.textContent = message;
@@ -125,6 +165,95 @@ function showToast(message) {
 
 function formatDate(log) {
   return `${log.date || ""} ${log.time || ""}`.trim();
+}
+
+function setText(id, value) {
+  const target = document.getElementById(id);
+  if (target) target.textContent = value;
+}
+
+function scoreLabel(score) {
+  if (score >= 86) return "极佳";
+  if (score >= 72) return "适宜";
+  if (score >= 58) return "可钓";
+  return "谨慎";
+}
+
+function renderConditions() {
+  const data = conditionsState;
+  setText("score-value", data.score);
+  setText("score-desc", data.description);
+  setText("fish-index-value", data.score);
+  setText("fish-index-label", scoreLabel(data.score));
+  setText("weather-summary", data.weather.summary);
+  setText("weather-temp", data.weather.tempRange);
+  setText("weather-wind", data.weather.wind);
+  setText("weather-pressure", data.weather.pressure);
+  setText("weather-humidity", data.weather.humidity);
+  setText("weather-visibility", data.weather.visibility);
+  setText("weather-water", data.weather.water);
+  setText("weather-window", data.weather.window);
+  setText("rec-lure", data.recommendation.lure);
+  setText("rec-color", data.recommendation.color);
+  setText("rec-weight", data.recommendation.weight);
+  setText("rec-retrieve", data.recommendation.retrieve);
+  renderRadar(data.radar);
+}
+
+function renderRadar(items) {
+  const svg = document.getElementById("radar-chart");
+  if (!svg) return;
+
+  const cx = 96;
+  const cy = 65;
+  const radius = 42;
+  const count = items.length;
+  const points = items.map((item, index) => {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
+    const distance = radius * Math.max(0, Math.min(100, item.value)) / 100;
+    return {
+      ...item,
+      angle,
+      x: cx + Math.cos(angle) * distance,
+      y: cy + Math.sin(angle) * distance,
+      lx: cx + Math.cos(angle) * (radius + 21),
+      ly: cy + Math.sin(angle) * (radius + 18),
+      vx: cx + Math.cos(angle) * (radius + 8),
+      vy: cy + Math.sin(angle) * (radius + 5)
+    };
+  });
+
+  const grid = [0.25, 0.5, 0.75, 1].map((scale) => {
+    const polygon = items.map((_, index) => {
+      const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
+      return `${cx + Math.cos(angle) * radius * scale},${cy + Math.sin(angle) * radius * scale}`;
+    }).join(" ");
+    return `<polygon class="radar-grid" points="${polygon}"></polygon>`;
+  }).join("");
+
+  const axes = items.map((_, index) => {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * index) / count;
+    return `<line class="radar-axis" x1="${cx}" y1="${cy}" x2="${cx + Math.cos(angle) * radius}" y2="${cy + Math.sin(angle) * radius}"></line>`;
+  }).join("");
+
+  const shape = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const dots = points.map((point) => `<circle class="radar-dot" cx="${point.x}" cy="${point.y}" r="3"></circle>`).join("");
+  const labels = points.map((point) => {
+    const anchor = point.lx < cx - 6 ? "end" : point.lx > cx + 6 ? "start" : "middle";
+    return `
+      <text class="radar-label" x="${point.lx}" y="${point.ly}" text-anchor="${anchor}">${point.label}</text>
+      <text class="radar-value" x="${point.vx}" y="${point.vy}" text-anchor="${anchor}">${point.value}</text>
+    `;
+  }).join("");
+
+  svg.innerHTML = `
+    <title id="radar-title">天气条件雷达图</title>
+    ${grid}
+    ${axes}
+    <polygon class="radar-shape" points="${shape}"></polygon>
+    ${dots}
+    ${labels}
+  `;
 }
 
 function renderHomeLogs() {
@@ -301,6 +430,48 @@ async function handleSubmit(event) {
   }
 }
 
+async function refreshConditionsFromCoords(coords) {
+  setText("condition-source", "更新中");
+  try {
+    const data = await apiGetConditions(coords);
+    conditionsState = {
+      ...structuredClone(defaultConditions),
+      ...data,
+      weather: { ...defaultConditions.weather, ...(data.weather || {}) },
+      recommendation: { ...defaultConditions.recommendation, ...(data.recommendation || {}) },
+      radar: Array.isArray(data.radar) ? data.radar : defaultConditions.radar
+    };
+    renderConditions();
+    setText("condition-source", "已定位");
+    showToast("已按当前位置更新钓况指数");
+  } catch (error) {
+    setText("condition-source", "重试");
+    showToast("实时钓况获取失败，当前显示默认模型");
+  }
+}
+
+function requestLocationConditions() {
+  if (!navigator.geolocation) {
+    setText("condition-source", "无定位");
+    showToast("当前浏览器不支持定位");
+    return;
+  }
+
+  setText("condition-source", "定位中");
+  navigator.geolocation.getCurrentPosition(
+    (position) => refreshConditionsFromCoords(position.coords),
+    () => {
+      setText("condition-source", "未授权");
+      showToast("请允许定位，才能按当前位置计算钓况");
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 10 * 60 * 1000
+    }
+  );
+}
+
 document.querySelectorAll("[data-action]").forEach((button) => {
   button.addEventListener("click", () => openModal(button.dataset.action));
 });
@@ -318,6 +489,11 @@ modal.addEventListener("click", (event) => {
   if (event.target === modal) closeModal();
 });
 form.addEventListener("submit", handleSubmit);
+document.getElementById("refresh-conditions")?.addEventListener("click", requestLocationConditions);
 
+renderConditions();
 renderAll();
 apiGetState();
+if (HAS_CLOUD_API && location.protocol === "https:") {
+  requestLocationConditions();
+}
