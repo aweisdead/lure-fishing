@@ -104,6 +104,7 @@ function loadState() {
 
 let state = loadState();
 let conditionsState = structuredClone(defaultConditions);
+let locationRequestId = 0;
 
 function saveState() {
   // Persistence is intentionally cloud-only. file:// preview keeps data in memory.
@@ -434,10 +435,14 @@ async function refreshConditionsFromCoords(coords) {
   setText("condition-source", "更新中");
   try {
     const data = await apiGetConditions(coords);
+    const accuracy = Number(coords.accuracy);
+    const accuracyLabel = Number.isFinite(accuracy)
+      ? `定位 ±${Math.round(accuracy)}m`
+      : "定位成功";
     conditionsState = {
       ...structuredClone(defaultConditions),
       ...data,
-      weather: { ...defaultConditions.weather, ...(data.weather || {}) },
+      weather: { ...defaultConditions.weather, ...(data.weather || {}), visibility: accuracyLabel },
       recommendation: { ...defaultConditions.recommendation, ...(data.recommendation || {}) },
       radar: Array.isArray(data.radar) ? data.radar : defaultConditions.radar
     };
@@ -450,6 +455,28 @@ async function refreshConditionsFromCoords(coords) {
   }
 }
 
+function locationErrorMessage(error) {
+  if (!error) {
+    return { label: "失败", message: "手机没有返回定位结果，请重试" };
+  }
+  if (error.code === 1) {
+    return { label: "未授权", message: "定位权限被拒绝，请在系统权限里允许位置" };
+  }
+  if (error.code === 2) {
+    return { label: "无信号", message: "手机定位不可用，请确认系统定位/GPS已开启" };
+  }
+  if (error.code === 3) {
+    return { label: "超时", message: "定位超时，请到室外或打开系统定位后重试" };
+  }
+  return { label: "失败", message: "定位失败，请稍后重试" };
+}
+
+function getPosition(options) {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+  });
+}
+
 function requestLocationConditions() {
   if (!navigator.geolocation) {
     setText("condition-source", "无定位");
@@ -457,19 +484,34 @@ function requestLocationConditions() {
     return;
   }
 
+  const requestId = ++locationRequestId;
   setText("condition-source", "定位中");
-  navigator.geolocation.getCurrentPosition(
-    (position) => refreshConditionsFromCoords(position.coords),
-    () => {
-      setText("condition-source", "未授权");
-      showToast("请允许定位，才能按当前位置计算钓况");
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 12000,
-      maximumAge: 10 * 60 * 1000
-    }
-  );
+
+  Promise.resolve()
+    .then(() => getPosition({
+      enableHighAccuracy: false,
+      timeout: 18000,
+      maximumAge: 5 * 60 * 1000
+    }))
+    .catch((firstError) => {
+      if (firstError?.code === 1) throw firstError;
+      setText("condition-source", "精定位");
+      return getPosition({
+        enableHighAccuracy: true,
+        timeout: 25000,
+        maximumAge: 0
+      });
+    })
+    .then((position) => {
+      if (requestId !== locationRequestId) return;
+      refreshConditionsFromCoords(position.coords);
+    })
+    .catch((error) => {
+      if (requestId !== locationRequestId) return;
+      const detail = locationErrorMessage(error);
+      setText("condition-source", detail.label);
+      showToast(detail.message);
+    });
 }
 
 document.querySelectorAll("[data-action]").forEach((button) => {
