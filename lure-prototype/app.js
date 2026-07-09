@@ -148,10 +148,9 @@ async function apiCreate(type, data) {
 
 async function apiGetConditions(coords) {
   if (!HAS_CLOUD_API) return structuredClone(defaultConditions);
-  const params = new URLSearchParams({
-    lat: coords.latitude,
-    lon: coords.longitude
-  });
+  const params = coords
+    ? new URLSearchParams({ lat: coords.latitude, lon: coords.longitude })
+    : new URLSearchParams({ fallback: "network" });
   const response = await fetch(`/api/conditions?${params}`);
   if (!response.ok) throw new Error(`conditions ${response.status}`);
   return response.json();
@@ -455,6 +454,27 @@ async function refreshConditionsFromCoords(coords) {
   }
 }
 
+async function refreshConditionsFromNetwork(reason) {
+  setText("condition-source", "网络估算");
+  try {
+    const data = await apiGetConditions(null);
+    const label = data.location?.label ? `网络估算 ${data.location.label}` : "网络估算";
+    conditionsState = {
+      ...structuredClone(defaultConditions),
+      ...data,
+      weather: { ...defaultConditions.weather, ...(data.weather || {}), visibility: label },
+      recommendation: { ...defaultConditions.recommendation, ...(data.recommendation || {}) },
+      radar: Array.isArray(data.radar) ? data.radar : defaultConditions.radar
+    };
+    renderConditions();
+    setText("condition-source", "网络估算");
+    showToast(`${reason}，已用网络位置估算`);
+  } catch (error) {
+    setText("condition-source", "重试");
+    showToast(`${reason}，网络估算也失败`);
+  }
+}
+
 function locationErrorMessage(error) {
   if (!error) {
     return { label: "失败", message: "手机没有返回定位结果，请重试" };
@@ -509,8 +529,12 @@ function requestLocationConditions() {
     .catch((error) => {
       if (requestId !== locationRequestId) return;
       const detail = locationErrorMessage(error);
-      setText("condition-source", detail.label);
-      showToast(detail.message);
+      if (error?.code === 1) {
+        setText("condition-source", detail.label);
+        showToast(detail.message);
+        return;
+      }
+      refreshConditionsFromNetwork(detail.label);
     });
 }
 

@@ -9,7 +9,7 @@ export default {
     }
 
     if (url.pathname === "/api/conditions" && request.method === "GET") {
-      return conditions(url);
+      return conditions(request, url);
     }
 
     if (url.pathname === "/api/logs" && request.method === "POST") {
@@ -28,18 +28,17 @@ export default {
   }
 };
 
-async function conditions(url) {
-  const lat = Number(url.searchParams.get("lat"));
-  const lon = Number(url.searchParams.get("lon"));
+async function conditions(request, url) {
+  const location = resolveConditionLocation(request, url);
 
-  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+  if (!location) {
     return json({ error: "INVALID_LOCATION" }, 400);
   }
 
   const apiUrl = new URL("https://api.open-meteo.com/v1/forecast");
   apiUrl.search = new URLSearchParams({
-    latitude: lat.toFixed(5),
-    longitude: lon.toFixed(5),
+    latitude: location.lat.toFixed(5),
+    longitude: location.lon.toFixed(5),
     current: [
       "temperature_2m",
       "relative_humidity_2m",
@@ -74,7 +73,7 @@ async function conditions(url) {
 
     if (!response.ok) throw new Error(`weather api ${response.status}`);
     const data = await response.json();
-    return json(buildConditionModel(data, lat, lon), 200, { "cache-control": "public, max-age=600" });
+    return json(buildConditionModel(data, location), 200, { "cache-control": "public, max-age=600" });
   } catch (error) {
     return json({ error: "CONDITIONS_FAILED", message: error.message }, 502);
   }
@@ -191,7 +190,42 @@ function clean(value) {
   return String(value || "").trim().slice(0, 500);
 }
 
-function buildConditionModel(data, lat, lon) {
+function resolveConditionLocation(request, url) {
+  const queryLat = Number(url.searchParams.get("lat"));
+  const queryLon = Number(url.searchParams.get("lon"));
+  const hasQueryLocation = validCoordinate(queryLat, queryLon);
+
+  if (hasQueryLocation) {
+    return {
+      lat: queryLat,
+      lon: queryLon,
+      source: "device",
+      label: "GPS定位"
+    };
+  }
+
+  const cf = request.cf || {};
+  const cfLat = Number(cf.latitude);
+  const cfLon = Number(cf.longitude);
+  if (validCoordinate(cfLat, cfLon)) {
+    const place = [cf.city, cf.region, cf.country].filter(Boolean).join(" · ");
+    return {
+      lat: cfLat,
+      lon: cfLon,
+      source: "network",
+      label: place || "网络位置"
+    };
+  }
+
+  return null;
+}
+
+function validCoordinate(lat, lon) {
+  return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
+}
+
+function buildConditionModel(data, location) {
+  const { lat, lon } = location;
   const current = data.current || {};
   const hourly = data.hourly || {};
   const daily = data.daily || {};
@@ -234,7 +268,9 @@ function buildConditionModel(data, lat, lon) {
     location: {
       latitude: Number(lat.toFixed(5)),
       longitude: Number(lon.toFixed(5)),
-      timezone: data.timezone || "auto"
+      timezone: data.timezone || "auto",
+      source: location.source,
+      label: location.label
     },
     updatedAt: currentTime,
     score,
