@@ -1,0 +1,15 @@
+.gitignore
+worker.js
+functions/**
+migrations/**
+node_modules/**
+.wrangler/**
+package.json
+package-lock.json
+wrangler.toml
+wrangler.jsonc
+DEPLOY.md
+design-qa.md
+screenshot*.png
+comparison.png
+*.log

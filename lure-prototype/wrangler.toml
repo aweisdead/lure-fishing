@@ -1,6 +1,10 @@
 name = "lure-assistant"
 compatibility_date = "2026-07-09"
-pages_build_output_dir = "."
+main = "worker.js"
+
+[assets]
+directory = "."
+binding = "ASSETS"
 
 [[d1_databases]]
 binding = "DB"
