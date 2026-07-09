@@ -1,0 +1,14 @@
+{
+  "name": "lure-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev .",
+    "deploy": "wrangler pages deploy . --project-name lure-assistant",
+    "db:migrate:local": "wrangler d1 migrations apply lure-assistant-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply lure-assistant-db --remote"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
