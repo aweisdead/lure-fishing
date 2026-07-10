@@ -105,6 +105,22 @@ function loadState() {
 let state = loadState();
 let conditionsState = structuredClone(defaultConditions);
 let locationRequestId = 0;
+let activeGearCategory = "全部";
+
+const defaultGearCategories = ["全部", "拟饵", "钓竿", "渔轮", "线组", "配件", "未分类"];
+
+function getGearCategory(gear) {
+  return String(gear.category || gear.type || "未分类").trim() || "未分类";
+}
+
+function getGearCategories() {
+  const categories = [...defaultGearCategories];
+  state.gear.forEach((gear) => {
+    const category = getGearCategory(gear);
+    if (!categories.includes(category)) categories.push(category);
+  });
+  return categories;
+}
 
 function saveState() {
   // Persistence is intentionally cloud-only. file:// preview keeps data in memory.
@@ -296,15 +312,44 @@ function renderSpots() {
 }
 
 function renderGear() {
+  const filterTarget = document.getElementById("gear-filters");
   const target = document.getElementById("gear-list");
+  const categories = getGearCategories();
+  if (!categories.includes(activeGearCategory)) activeGearCategory = "全部";
+
+  if (filterTarget) {
+    const counts = state.gear.reduce((result, gear) => {
+      const category = getGearCategory(gear);
+      result[category] = (result[category] || 0) + 1;
+      return result;
+    }, {});
+    filterTarget.innerHTML = categories.map((category) => `
+      <button class="gear-filter${category === activeGearCategory ? " active" : ""}" type="button" role="tab" aria-selected="${category === activeGearCategory}" data-gear-category="${category}">
+        <span>${category}</span><b>${category === "全部" ? state.gear.length : counts[category] || 0}</b>
+      </button>
+    `).join("");
+  }
+
   if (!state.gear.length) {
     target.innerHTML = `<div class="empty-state">还没有装备。点击“添加装备”建立装备库。</div>`;
     return;
   }
-  target.innerHTML = state.gear.map((gear) => `
-    <article class="stack-item">
-      <strong>${gear.name}</strong>
-      <span>${gear.type || "装备"} · ${gear.spec || "未记录规格"}</span>
+  const visibleGear = activeGearCategory === "全部"
+    ? state.gear
+    : state.gear.filter((gear) => getGearCategory(gear) === activeGearCategory);
+
+  if (!visibleGear.length) {
+    target.innerHTML = `<div class="empty-state">这个分类还没有装备。</div>`;
+    return;
+  }
+
+  target.innerHTML = visibleGear.map((gear) => `
+    <article class="stack-item gear-item">
+      <div class="gear-item-head">
+        <strong>${gear.name}</strong>
+        <em class="gear-category">${getGearCategory(gear)}</em>
+      </div>
+      <span>${gear.spec || "未记录规格"}</span>
       <small>${gear.note || "暂无备注"}</small>
     </article>
   `).join("");
@@ -371,7 +416,7 @@ function openModal(type) {
       fields: `
         <label class="form-field"><span>装备名称</span><input name="name" required placeholder="米诺 110SP"></label>
         <div class="field-grid">
-          <label class="form-field"><span>类型</span><select name="type"><option>拟饵</option><option>钓竿</option><option>渔轮</option><option>线组</option><option>配件</option></select></label>
+          <label class="form-field"><span>分类</span><select name="type"><option>拟饵</option><option>钓竿</option><option>渔轮</option><option>线组</option><option>配件</option></select></label>
           <label class="form-field"><span>规格</span><input name="spec" placeholder="12g / 银黑背"></label>
         </div>
         <label class="form-field"><span>备注</span><textarea name="note" placeholder="适用鱼种、场景、搭配线组"></textarea></label>
@@ -545,6 +590,13 @@ function handleLocationTrigger(event) {
   requestLocationConditions();
 }
 
+function handleGearFilter(event) {
+  const filter = event.target.closest?.("[data-gear-category]");
+  if (!filter) return;
+  activeGearCategory = filter.dataset.gearCategory;
+  renderGear();
+}
+
 document.querySelectorAll("[data-action]").forEach((button) => {
   button.addEventListener("click", () => openModal(button.dataset.action));
 });
@@ -564,6 +616,7 @@ modal.addEventListener("click", (event) => {
 form.addEventListener("submit", handleSubmit);
 document.addEventListener("click", handleLocationTrigger);
 document.addEventListener("touchend", handleLocationTrigger, { passive: false });
+document.addEventListener("click", handleGearFilter);
 
 renderConditions();
 renderAll();
