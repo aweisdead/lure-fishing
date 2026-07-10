@@ -1,4 +1,4 @@
-const CACHE_NAME = "lure-assistant-v5";
+const CACHE_NAME = "lure-assistant-v6";
 const APP_SHELL = [
   "/",
   "/index.html",
