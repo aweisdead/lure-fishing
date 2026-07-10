@@ -9,7 +9,7 @@ export default {
     }
 
     if (url.pathname === "/api/conditions" && request.method === "GET") {
-      return conditions(request, url);
+      return conditions(request, url, env);
     }
 
     if (url.pathname === "/api/logs" && request.method === "POST") {
@@ -28,7 +28,7 @@ export default {
   }
 };
 
-async function conditions(request, url) {
+async function conditions(request, url, env) {
   const location = resolveConditionLocation(request, url);
 
   if (!location) {
@@ -73,7 +73,8 @@ async function conditions(request, url) {
 
     if (!response.ok) throw new Error(`weather api ${response.status}`);
     const data = await response.json();
-    return json(buildConditionModel(data, location), 200, { "cache-control": "public, max-age=600" });
+    const context = await loadRecommendationContext(env);
+    return json(buildConditionModel(data, location, context), 200, { "cache-control": "private, no-store" });
   } catch (error) {
     return json({ error: "CONDITIONS_FAILED", message: error.message }, 502);
   }
@@ -162,6 +163,25 @@ async function createSpot(request, env) {
   }
 }
 
+async function loadRecommendationContext(env) {
+  if (!env?.DB) return { gear: [], logs: [], spots: [] };
+
+  try {
+    const [gear, logs, spots] = await Promise.all([
+      env.DB.prepare("SELECT name, type, spec FROM gear ORDER BY created_at DESC LIMIT 100").all(),
+      env.DB.prepare("SELECT lure FROM logs WHERE lure IS NOT NULL AND lure != '' ORDER BY created_at DESC LIMIT 50").all(),
+      env.DB.prepare("SELECT name, target, structure FROM spots ORDER BY created_at DESC LIMIT 20").all()
+    ]);
+    return {
+      gear: gear.results || [],
+      logs: logs.results || [],
+      spots: spots.results || []
+    };
+  } catch (error) {
+    return { gear: [], logs: [], spots: [] };
+  }
+}
+
 async function createGear(request, env) {
   try {
     const data = await request.json();
@@ -224,7 +244,7 @@ function validCoordinate(lat, lon) {
   return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
 }
 
-function buildConditionModel(data, location) {
+function buildConditionModel(data, location, context = {}) {
   const { lat, lon } = location;
   const current = data.current || {};
   const hourly = data.hourly || {};
@@ -264,6 +284,13 @@ function buildConditionModel(data, location) {
     [activityScore, 0.22]
   ]));
 
+  const recommendation = personalizeRecommendation({
+    lure: recommendLure(waterTemp, wind, weatherCode),
+    color: recommendColor(cloud, weatherCode),
+    weight: recommendWeight(wind),
+    retrieve: recommendRetrieve(activityScore, waterTemp)
+  }, context);
+
   return {
     location: {
       latitude: Number(lat.toFixed(5)),
@@ -292,12 +319,7 @@ function buildConditionModel(data, location) {
       water: `水温估算 ${waterTemp.toFixed(1)}°C`,
       window: buildWindowLabel(sunrise, sunset)
     },
-    recommendation: {
-      lure: recommendLure(waterTemp, wind, weatherCode),
-      color: recommendColor(cloud, weatherCode),
-      weight: recommendWeight(wind),
-      retrieve: recommendRetrieve(activityScore, waterTemp)
-    },
+    recommendation,
     source: "Open-Meteo forecast; water temperature and dissolved oxygen are model estimates."
   };
 }
@@ -463,6 +485,75 @@ function recommendRetrieve(activityScore, waterTemp) {
   if (activityScore >= 80) return "快慢结合抽停";
   if (waterTemp < 16) return "慢拖小跳";
   return "匀收穿插停顿";
+}
+
+function personalizeRecommendation(base, context) {
+  const gear = Array.isArray(context.gear) ? context.gear : [];
+  const logs = Array.isArray(context.logs) ? context.logs : [];
+  const spots = Array.isArray(context.spots) ? context.spots : [];
+  const recentSpot = spots[0] || {};
+  const targetText = `${recentSpot.target || ""} ${recentSpot.structure || ""}`;
+  const keywords = recommendationKeywords(base.lure, targetText);
+  const lureGear = gear.filter(isLureGear);
+
+  if (!lureGear.length) {
+    return {
+      ...base,
+      lureMeta: "\u73af\u5883\u5339\u914d",
+      basis: "\u57fa\u4e8e\u5f53\u524d\u73af\u5883"
+    };
+  }
+
+  const historicalLures = logs.map((log) => String(log.lure || "").trim()).filter(Boolean);
+  const selected = lureGear
+    .map((item) => ({ item, score: scorePersonalLure(item, keywords, historicalLures) }))
+    .sort((left, right) => right.score - left.score)[0].item;
+
+  return {
+    ...base,
+    lure: selected.name || base.lure,
+    lureMeta: selected.spec || "\u88c5\u5907\u5e93\u53ef\u7528",
+    basis: recentSpot.name
+      ? "\u7ed3\u5408\u88c5\u5907\u5e93\u3001\u5386\u53f2\u9c7c\u83b7\u4e0e\u6700\u8fd1\u6807\u70b9"
+      : historicalLures.length
+        ? "\u7ed3\u5408\u88c5\u5907\u5e93\u4e0e\u5386\u53f2\u9c7c\u83b7"
+        : "\u7ed3\u5408\u4f60\u7684\u88c5\u5907\u5e93\u4e0e\u5f53\u524d\u73af\u5883"
+  };
+}
+
+function isLureGear(item) {
+  const type = String(item.type || item.category || "");
+  const text = `${item.name || ""} ${item.spec || ""} ${type}`;
+  return type === "\u62df\u9975" || /(\u7c73\u8bfa|VIB|\u8f6f\u866b|\u96f7\u86d9|\u94c5\u7b14|\u4eae\u7247|\u62df\u9975)/i.test(text);
+}
+
+function recommendationKeywords(baseLure, targetText) {
+  const keywords = baseLure.includes("VIB")
+    ? ["VIB", "\u6c89\u6c34", "\u94c5\u7b14"]
+    : baseLure.includes("\u8f6f\u866b")
+      ? ["\u8f6f\u866b", "\u96f7\u86d9"]
+      : ["\u7c73\u8bfa", "Minnow", "\u94c5\u7b14"];
+
+  if (/(\u7fd8\u5634|\u9cdc|\u9ce1)/.test(targetText)) keywords.unshift("VIB", "\u7c73\u8bfa");
+  if (/(\u9ed1\u9c7c|\u8349\u9c7c)/.test(targetText) || /(\u8349|\u969c\u788d)/.test(targetText)) keywords.unshift("\u8f6f\u866b", "\u96f7\u86d9");
+  return [...new Set(keywords)];
+}
+
+function scorePersonalLure(item, keywords, historicalLures) {
+  const text = `${item.name || ""} ${item.spec || ""}`.toLowerCase();
+  let score = 0;
+  keywords.forEach((keyword, index) => {
+    if (text.includes(keyword.toLowerCase())) score += 12 - Math.min(index, 8);
+  });
+
+  if (historicalLures.some((lure) => shareLureFamily(text, lure.toLowerCase()))) score += 10;
+  return score;
+}
+
+function shareLureFamily(left, right) {
+  return ["\u7c73\u8bfa", "vib", "\u8f6f\u866b", "\u96f7\u86d9", "\u94c5\u7b14", "\u4eae\u7247"].some(
+    (keyword) => left.includes(keyword) && right.includes(keyword)
+  );
 }
 
 function json(body, status = 200, headers = {}) {

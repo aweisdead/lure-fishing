@@ -92,9 +92,11 @@ const defaultConditions = {
   },
   recommendation: {
     lure: "米诺 (Minnow)",
+    lureMeta: "环境匹配",
     color: "自然色系",
     weight: "10 ~ 14g",
-    retrieve: "快慢结合抽停"
+    retrieve: "快慢结合抽停",
+    basis: "基于当前环境"
   }
 };
 
@@ -210,6 +212,8 @@ function renderConditions() {
   setText("weather-water", data.weather.water);
   setText("weather-window", data.weather.window);
   setText("rec-lure", data.recommendation.lure);
+  setText("rec-lure-meta", data.recommendation.lureMeta || "环境匹配");
+  setText("recommend-basis", data.recommendation.basis || "基于当前环境");
   setText("rec-color", data.recommendation.color);
   setText("rec-weight", data.recommendation.weight);
   setText("rec-retrieve", data.recommendation.retrieve);
