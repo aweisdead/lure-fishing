@@ -1,0 +1,15 @@
+{
+  "name": "lure-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx wrangler dev",
+    "deploy": "npx wrangler deploy",
+    "auth:hash": "node scripts/hash-password.mjs",
+    "db:migrate:local": "wrangler d1 migrations apply lure-assistant-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply lure-assistant-db --remote"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

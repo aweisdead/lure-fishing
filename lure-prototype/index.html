@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f36a1c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="路亚助手">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <title>路亚助手</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Noto+Sans+SC:wght@400;500;700;800;900&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=v2-d1-photos-1">
+</head>
+<body>
+  <section class="auth-gate" id="auth-gate" hidden>
+    <div class="auth-mark">
+      <img src="assets/brand-lockup-transparent.png" alt="路亚助手">
+    </div>
+    <div class="auth-copy">
+      <span class="auth-eyebrow">PRIVATE WATER</span>
+      <h1>登录路亚助手</h1>
+      <p>你的钓况、标点和装备数据仅对你开放。</p>
+    </div>
+    <form class="auth-form" id="auth-form">
+      <label for="auth-password">访问密码</label>
+      <input id="auth-password" name="password" type="password" autocomplete="current-password" placeholder="请输入访问密码" required>
+      <button type="submit">
+        <span class="material-symbols-rounded">lock_open</span>
+        进入应用
+      </button>
+      <p class="auth-error" id="auth-error" role="alert" hidden></p>
+    </form>
+  </section>
+  <main class="phone-screen" aria-label="路亚助手">
+    <header class="brand-row">
+      <img class="brand-lockup" src="assets/brand-lockup-transparent.png" alt="路亚助手，让每一次抛投更有收获">
+      <div class="fish-index" aria-label="钓鱼指数">
+        <span class="material-symbols-rounded">deployed_code</span>
+        <div>
+          <small>钓鱼指数</small>
+          <strong><em id="fish-index-value">86</em> <b id="fish-index-label">适宜</b></strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="score-card panel home-section">
+      <div class="score-left">
+        <div class="card-title">
+          <span>今日钓况评分</span>
+          <span class="material-symbols-rounded">info</span>
+        </div>
+        <div class="location-bar" role="group" aria-label="当前位置">
+          <span class="material-symbols-rounded location-bar-icon">location_on</span>
+          <button class="location-place-btn" type="button" id="show-location-detail" aria-label="查看定位详情" title="查看定位详情">
+            <em id="condition-source">定位更新</em>
+            <span id="condition-place" class="location-place" aria-live="polite">查看详情</span>
+          </button>
+          <button class="location-refresh" type="button" id="refresh-conditions" aria-label="按当前位置更新钓况评分" title="重新定位">
+            <span class="material-symbols-rounded">my_location</span>
+          </button>
+        </div>
+        <div class="score-number">
+          <strong id="score-value">86</strong>
+          <span>分<br><em>/100</em></span>
+        </div>
+        <p id="score-desc">非常适合出钓</p>
+      </div>
+      <div class="radar-widget" aria-label="天气条件雷达图">
+        <svg id="radar-chart" viewBox="0 0 190 130" role="img" aria-labelledby="radar-title">
+          <title id="radar-title">天气条件雷达图</title>
+        </svg>
+      </div>
+    </section>
+
+    <section class="weather-panel panel home-section" aria-label="天气条件">
+      <article>
+        <span class="material-symbols-rounded weather-icon cloud">partly_cloudy_day</span>
+        <div>
+          <strong id="weather-summary">多云</strong>
+          <small id="weather-temp">24.0°C</small>
+        </div>
+      </article>
+      <article>
+        <span class="material-symbols-rounded weather-icon wind">air</span>
+        <div>
+          <strong id="weather-wind">东南风 2级</strong>
+          <small id="weather-pressure">气压 1008 hPa</small>
+        </div>
+      </article>
+      <article>
+        <span class="material-symbols-rounded weather-icon water">humidity_percentage</span>
+        <div>
+          <strong id="weather-humidity">湿度 68%</strong>
+          <small id="weather-visibility">数据源 待定位</small>
+        </div>
+      </article>
+      <article>
+        <span class="material-symbols-rounded weather-icon wave">waves</span>
+        <div>
+          <strong id="weather-water">水温估算 24.6°C</strong>
+          <small id="weather-window">适宜窗口 6-10时</small>
+        </div>
+      </article>
+    </section>
+
+    <p class="home-data-attribution home-section">
+      天气：<a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a>
+      <span>·</span>
+      地名：<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>
+    </p>
+
+    <section class="action-panel panel home-section" aria-label="快速操作">
+      <button data-action="log">
+        <span class="material-symbols-rounded">assignment</span>
+        <strong>记录钓况</strong>
+        <small>记录渔获与环境</small>
+      </button>
+      <button data-action="spot">
+        <span class="material-symbols-rounded">my_location</span>
+        <strong>新增标点</strong>
+        <small>发现好点位</small>
+      </button>
+      <button data-action="gear">
+        <span class="material-symbols-rounded">backpack</span>
+        <strong>装备库</strong>
+        <small>管理我的装备</small>
+      </button>
+    </section>
+
+    <section class="recommend panel home-section">
+      <div class="panel-heading">
+        <h2>
+          <span class="material-symbols-rounded">deployed_code</span>
+          今日推荐方案
+        </h2>
+        <button data-view-link="recommend"><span id="recommend-basis">基于当前环境</span> <span class="material-symbols-rounded">chevron_right</span></button>
+      </div>
+
+      <div class="recommend-body">
+        <div class="lure-stage">
+          <img src="assets/lure-minnow.png" alt="推荐拟饵米诺">
+        </div>
+        <div class="spec-list">
+          <div>
+            <span class="material-symbols-rounded">phishing</span>
+            <small>推荐拟饵</small>
+            <strong id="rec-lure">米诺 (Minnow)</strong>
+            <em id="rec-lure-meta">110SP</em>
+          </div>
+          <div>
+            <span class="material-symbols-rounded">palette</span>
+            <small>推荐颜色</small>
+            <strong id="rec-color">自然色系</strong>
+            <em id="rec-color-meta">银黑背</em>
+          </div>
+          <div>
+            <span class="material-symbols-rounded">business_center</span>
+            <small>推荐重量</small>
+            <strong id="rec-weight">10 ~ 14g</strong>
+            <em id="rec-weight-meta">按风力调整</em>
+          </div>
+          <div>
+            <span class="material-symbols-rounded">monitoring</span>
+            <small>推荐泳姿</small>
+            <strong id="rec-retrieve">快慢结合抽停</strong>
+            <em id="rec-retrieve-meta">抽2-3下 停1-2秒</em>
+          </div>
+        </div>
+      </div>
+
+      <button class="detail-btn" data-view-link="recommend">
+        查看详情
+        <span class="material-symbols-rounded">chevron_right</span>
+      </button>
+    </section>
+
+    <section class="catch-panel panel home-section">
+      <div class="catch-heading">
+        <h2>最近渔获</h2>
+        <button data-view-link="catches">查看全部 <span class="material-symbols-rounded">chevron_right</span></button>
+      </div>
+      <div id="home-catch-list"></div>
+    </section>
+
+    <section class="page-view panel" id="view-catches" hidden>
+      <div class="page-heading catch-page-heading">
+        <h2>鱼获记录</h2>
+        <div class="page-heading-actions catch-page-actions">
+          <button class="mini-btn catch-session-create" type="button" data-action="session" data-return-view="catches">
+            <span class="material-symbols-rounded">calendar_add_on</span>
+            新建钓行
+          </button>
+        </div>
+      </div>
+      <section class="session-browser" aria-label="钓行档案">
+        <div class="session-browser-head">
+          <div>
+            <small>钓行档案</small>
+            <strong>按每次出钓查看鱼获</strong>
+          </div>
+          <button class="session-all-btn" type="button" data-open-session-archive>全部钓行</button>
+        </div>
+        <div id="session-list" class="session-list"></div>
+      </section>
+      <div id="session-filter-context" class="session-filter-context" hidden></div>
+      <div class="catch-filters" id="catch-filters">
+        <label class="catch-filter-field">
+          <span>按鱼种筛选</span>
+          <select id="catch-species-filter"></select>
+        </label>
+        <label class="catch-filter-field">
+          <span>按装备筛选</span>
+          <select id="catch-gear-filter"></select>
+        </label>
+        <label class="catch-filter-field">
+          <span>按拟饵筛选</span>
+          <select id="catch-lure-filter"></select>
+        </label>
+        <label class="catch-filter-field">
+          <span>按标点筛选</span>
+          <select id="catch-spot-filter"></select>
+        </label>
+        <div class="catch-date-filter">
+          <span class="catch-filter-label">按时间筛选</span>
+          <div class="catch-date-fields">
+            <label>
+              <span>开始日期</span>
+              <input id="catch-date-from" type="date" aria-label="开始日期">
+            </label>
+            <span class="catch-date-separator">至</span>
+            <label>
+              <span>结束日期</span>
+              <input id="catch-date-to" type="date" aria-label="结束日期">
+            </label>
+            <button class="filter-clear" id="clear-catch-time" type="button" title="清除时间筛选" aria-label="清除时间筛选">
+              <span class="material-symbols-rounded">close</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="all-catch-list" class="catch-list-full"></div>
+      <div id="catch-pagination" class="catch-pagination"></div>
+    </section>
+
+    <section class="page-view panel" id="view-spots" hidden>
+      <div class="page-heading">
+        <h2>标点记录</h2>
+        <button class="mini-btn" data-action="spot">新增标点</button>
+      </div>
+      <section class="spot-map-workspace" aria-label="标点地图">
+        <div class="spot-map-head"><div><small>标点地图</small><strong>查看已定位的出钓位置</strong></div><span id="spot-map-count"></span></div>
+        <div class="spot-map-filters">
+          <label><span>鱼种</span><select id="spot-map-species-filter"></select></label>
+          <label><span>状态</span><select id="spot-map-status-filter"></select></label>
+        </div>
+        <div id="spot-map" class="spot-map" aria-label="高德地图标点入口"></div>
+        <small id="spot-map-status" class="spot-map-status">正在准备高德地图标点</small>
+      </section>
+      <div id="spots-list" class="stack-list"></div>
+    </section>
+
+    <section class="page-view panel" id="view-recommend" hidden>
+      <div class="page-heading">
+        <h2>推荐方案</h2>
+        <button class="mini-btn" data-action="log">记录反馈</button>
+      </div>
+      <div class="recommend-list">
+        <article>
+          <strong>翘嘴 / 傍晚窗口</strong>
+          <span>沉水铅笔 9-12g，自然色或银黑背，抽停结合，优先明暗线和坝口回水。</span>
+        </article>
+        <article>
+          <strong>鳜鱼 / 乱石结构</strong>
+          <span>5-7g 铅头钩 + T尾，贴底小跳，落底后停 1 秒等截口。</span>
+        </article>
+        <article>
+          <strong>黑鱼 / 草区边缘</strong>
+          <span>雷蛙或无铅软虫，慢速走草洞，爆口后延迟扬竿。</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="page-view panel" id="view-analytics" hidden>
+      <div class="page-heading analytics-page-heading">
+        <div>
+          <h2>数据分析</h2>
+          <small>从每一次鱼获中找到规律</small>
+        </div>
+        <span class="material-symbols-rounded">query_stats</span>
+      </div>
+      <section class="analytics-filter" aria-label="统计范围">
+        <label>
+          <span>统计范围</span>
+          <select id="analytics-year-filter"></select>
+        </label>
+        <small id="analytics-filter-caption"></small>
+      </section>
+      <div id="analytics-content" class="analytics-content"></div>
+    </section>
+
+    <section class="page-view panel" id="view-gear" hidden>
+      <div class="page-heading">
+        <h2>装备库</h2>
+        <div class="page-heading-actions">
+          <button class="icon-heading-btn" type="button" data-open-data-tools aria-label="数据管理" title="数据管理">
+            <span class="material-symbols-rounded">database</span>
+          </button>
+          <button class="mini-btn" data-action="gear">添加装备</button>
+        </div>
+      </div>
+      <div id="gear-filters" class="gear-filters" role="tablist" aria-label="装备分类"></div>
+      <div id="gear-list" class="stack-list"></div>
+    </section>
+
+    <nav class="bottom-nav" aria-label="底部导航">
+      <button class="active" data-tab="today">
+        <span class="material-symbols-rounded">home</span>
+        <strong>今日</strong>
+      </button>
+      <button data-tab="spots">
+        <span class="material-symbols-rounded">location_on</span>
+        <strong>标点</strong>
+      </button>
+      <button data-tab="catches">
+        <span class="material-symbols-rounded">phishing</span>
+        <strong>鱼获</strong>
+      </button>
+      <button data-tab="analytics">
+        <span class="material-symbols-rounded">query_stats</span>
+        <strong>数据</strong>
+      </button>
+      <button data-tab="gear">
+        <span class="material-symbols-rounded">backpack</span>
+        <strong>装备</strong>
+      </button>
+    </nav>
+
+    <div class="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <div class="modal-backdrop" id="entry-modal" hidden>
+    <div class="entry-sheet" role="dialog" aria-modal="true" aria-labelledby="entry-title">
+      <div class="entry-head">
+        <h2 id="entry-title">记录</h2>
+        <button class="icon-close" type="button" data-close-modal>
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <form id="entry-form"></form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="log-datetime-picker-modal" hidden>
+    <section class="entry-sheet log-datetime-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="log-datetime-picker-title">
+      <div class="entry-head">
+        <h2 id="log-datetime-picker-title">选择日期和时间</h2>
+        <button class="icon-close" type="button" data-close-log-datetime-picker aria-label="关闭日期和时间选择">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="log-datetime-picker-content">
+        <label class="form-field"><span>日期</span><input id="log-picker-date" type="date"></label>
+        <label class="form-field"><span>时间</span><select id="log-picker-time"></select></label>
+        <button class="submit-btn" type="button" data-save-log-datetime-picker>确认时间</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="catch-detail-modal" hidden>
+    <div class="entry-sheet catch-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="catch-detail-title">
+      <div class="entry-head">
+        <h2 id="catch-detail-title">鱼获详情</h2>
+        <button class="icon-close" type="button" data-close-catch-detail aria-label="关闭鱼获详情">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div id="catch-detail-content" class="catch-detail-content"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop photo-viewer-modal" id="catch-photo-viewer-modal" hidden>
+    <section class="catch-photo-viewer" role="dialog" aria-modal="true" aria-labelledby="catch-photo-viewer-title">
+      <button class="icon-close" type="button" data-close-catch-photo-viewer aria-label="关闭图片预览">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+      <div id="catch-photo-viewer-content"></div>
+      <p id="catch-photo-viewer-title"></p>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="gear-detail-modal" hidden>
+    <div class="entry-sheet gear-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="gear-detail-title">
+      <div class="entry-head">
+        <h2 id="gear-detail-title">装备详情</h2>
+        <button class="icon-close" type="button" data-close-gear-detail aria-label="关闭装备详情">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div id="gear-detail-content" class="gear-detail-content"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="data-tools-modal" hidden>
+    <div class="entry-sheet data-tools-sheet" role="dialog" aria-modal="true" aria-labelledby="data-tools-title">
+      <div class="entry-head">
+        <h2 id="data-tools-title">数据管理</h2>
+        <button class="icon-close" type="button" data-close-data-tools aria-label="关闭数据管理">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="data-tools-content">
+        <section class="data-tools-intro">
+          <span class="material-symbols-rounded">cloud_done</span>
+          <div><strong>云端数据由 D1 保存</strong><small>备份文件只会下载到当前手机，不会上传到其他服务。</small></div>
+        </section>
+        <section class="data-tool-group">
+          <div><strong>完整备份</strong><small>钓行、鱼获、标点和装备会保存为一个 JSON 文件；鱼获实拍图保存在云端，不包含在 JSON 内。</small></div>
+          <button class="data-tool-button primary" type="button" data-export-backup>
+            <span class="material-symbols-rounded">download</span>下载完整备份
+          </button>
+        </section>
+        <section class="data-tool-group">
+          <div><strong>鱼获表格</strong><small>导出 CSV，可用 Excel 或表格软件查看。</small></div>
+          <button class="data-tool-button" type="button" data-export-catches-csv>
+            <span class="material-symbols-rounded">table_view</span>导出鱼获 CSV
+          </button>
+        </section>
+        <section class="data-tool-group danger">
+          <div><strong>恢复完整备份</strong><small>会替换当前云端的钓行、鱼获、标点和装备，同时清理当前云端的鱼获实拍图。</small></div>
+          <label class="data-tool-button restore" for="data-restore-file">
+            <span class="material-symbols-rounded">upload</span>选择备份并恢复
+          </label>
+          <input id="data-restore-file" type="file" accept="application/json,.json" hidden>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="session-archive-modal" hidden>
+    <div class="entry-sheet session-archive-sheet" role="dialog" aria-modal="true" aria-labelledby="session-archive-title">
+      <div class="entry-head">
+        <h2 id="session-archive-title">全部钓行</h2>
+        <button class="icon-close" type="button" data-close-session-archive aria-label="关闭全部钓行">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="session-archive-content">
+        <div class="session-archive-filter">
+          <label><span>年份</span><select id="session-archive-year"></select></label>
+          <label><span>月份</span><select id="session-archive-month"></select></label>
+          <label><span>日期</span><input id="session-archive-date" type="date"></label>
+        </div>
+        <div id="session-archive-stats" class="session-archive-stats"></div>
+        <div id="session-archive-list" class="session-archive-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="session-review-modal" hidden>
+    <div class="entry-sheet session-review-sheet" role="dialog" aria-modal="true" aria-labelledby="session-review-title">
+      <div class="entry-head">
+        <h2 id="session-review-title">钓行复盘</h2>
+        <button class="icon-close" type="button" data-close-session-review aria-label="关闭钓行复盘">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div id="session-review-content" class="session-review-content"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="spot-insight-modal" hidden>
+    <div class="entry-sheet spot-insight-sheet" role="dialog" aria-modal="true" aria-labelledby="spot-insight-title">
+      <div class="entry-head">
+        <h2 id="spot-insight-title">标点洞察</h2>
+        <button class="icon-close" type="button" data-close-spot-insight aria-label="关闭标点洞察">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div id="spot-insight-content" class="spot-insight-content"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="location-detail-modal" hidden>
+    <div class="entry-sheet location-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="location-detail-title">
+      <div class="entry-head">
+        <h2 id="location-detail-title">定位详情</h2>
+        <button class="icon-close" type="button" data-close-location-detail aria-label="关闭定位详情">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div id="location-detail-content" class="location-detail-content"></div>
+    </div>
+  </div>
+
+  <script src="app.js?v=v2-measurements-1"></script>
+  <script>
+    if ("serviceWorker" in navigator && location.protocol === "https:") {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

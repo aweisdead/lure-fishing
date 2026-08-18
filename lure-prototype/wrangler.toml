@@ -1,0 +1,14 @@
+name = "lure-assistant"
+compatibility_date = "2026-07-09"
+main = "worker.js"
+workers_dev = true
+preview_urls = true
+
+[assets]
+directory = "."
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lure-assistant-db"
+database_id = "ac253423-123f-475b-8345-d69558541736"

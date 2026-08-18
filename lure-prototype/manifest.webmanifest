@@ -1,0 +1,26 @@
+{
+  "name": "路亚助手",
+  "short_name": "路亚助手",
+  "description": "记录钓况、标点、推荐方案和装备库的路亚助手。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#090d0c",
+  "theme_color": "#f36a1c",
+  "categories": ["sports", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/assets/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
