@@ -1,0 +1,5 @@
+# Copy this file to .dev.vars for local Wrangler development.
+# Generate the values with: node scripts/hash-password.mjs
+AUTH_PASSWORD_TOKEN=replace-with-token
+AUTH_PASSWORD_PEPPER=replace-with-pepper
+AUTH_SESSION_SECRET=replace-with-a-long-random-secret

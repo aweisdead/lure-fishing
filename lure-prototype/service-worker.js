@@ -1,4 +1,4 @@
-const CACHE_NAME = "lure-assistant-v8";
+const CACHE_NAME = "lure-assistant-v2-measurements-1";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -9,12 +9,23 @@ const APP_SHELL = [
   "/assets/app-icon-512.png",
   "/assets/apple-touch-icon.png",
   "/assets/brand-lockup-transparent.png",
-  "/assets/fish-index.png",
-  "/assets/radar-chart.png",
+  "/assets/gear-fishing-rod-ai.png",
+  "/assets/gear-spinning-reel-ai.png",
   "/assets/lure-minnow.png",
-  "/assets/catch-bass.png",
   "/assets/catch-perch.png",
-  "/assets/catch-snakehead.png"
+  "/assets/catch-snakehead.png",
+  "/assets/catch-zui.png",
+  "/assets/fish-ganchina-user.png",
+  "/assets/fish-duckbill-zui-user.jpg",
+  "/assets/fish-snakehead-user.png",
+  "/assets/fish-bass-user.png",
+  "/assets/fish-mandarin-user.png",
+  "/assets/fish-makou-user.png",
+  "/assets/fish-junyu-user.png",
+  "/assets/fish-catfish-user.png",
+  "/assets/fish-carp-user.png",
+  "/assets/fish-redtail-user.jpg",
+  "/assets/fish-duckbill-zui-user-fixed.jpg"
 ];
 
 self.addEventListener("install", (event) => {

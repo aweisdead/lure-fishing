@@ -9,7 +9,13 @@ package-lock.json
 wrangler.toml
 wrangler.jsonc
 DEPLOY.md
+V1_ARCHIVE.md
+VERSION
 design-qa.md
 screenshot*.png
 comparison.png
 *.log
+.dev.vars
+.dev.vars.example
+scripts/**
+V2_AUTH_SETUP.md

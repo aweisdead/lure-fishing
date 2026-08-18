@@ -1,0 +1,3 @@
+ALTER TABLE spots ADD COLUMN latitude REAL;
+ALTER TABLE spots ADD COLUMN longitude REAL;
+ALTER TABLE spots ADD COLUMN accuracy REAL;
